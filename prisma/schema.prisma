@@ -1,0 +1,25 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Landing / studio reaction counters (like button), upserted by key.
+model ReactionCounter {
+  id        String @id @default(cuid())
+  key       String @unique
+  count     Int    @default(0)
+}
+
+// Server-side Remotion render queue (personalized MP4 clips).
+model RenderJob {
+  id        String   @id @default(cuid())
+  name      String
+  status    String   @default("queued")
+  url       String?
+  error     String?
+  createdAt DateTime @default(now())
+}

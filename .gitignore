@@ -1,0 +1,18 @@
+# deps / build
+node_modules/
+.next/
+out/
+.renders/
+.pages-build-tmp/
+*.tsbuildinfo
+next-env.d.ts
+
+# runtime state
+db/*.db
+db/*.db-journal
+.env
+dev.log
+server.log
+
+# OS
+.DS_Store
