@@ -24,6 +24,11 @@ export async function GET(
         { status: 409 }
       );
     }
+    // Lambda renders produce presigned S3 URLs — redirect to them
+    // instead of streaming from the (serverless, read-only) filesystem.
+    if (job.url && /^https?:\/\//.test(job.url)) {
+      return NextResponse.redirect(job.url, 307);
+    }
     const filePath = renderPathForJob(id);
     const file = await fs.readFile(filePath).catch(() => null);
     if (!file) {

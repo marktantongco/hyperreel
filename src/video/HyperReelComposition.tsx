@@ -83,6 +83,9 @@ function videoRig(frame: number, durationInFrames: number): VideoRig {
 }
 
 // ------------------------------------------------------------- 3D world mount
+// scratch look vector — module-level, reused every frame (no per-frame allocs)
+const lookVec = new THREE.Vector3();
+
 const WorldBridge: React.FC = () => {
   const scene = useThree((s) => s.scene);
   const frame = useCurrentFrame();
@@ -116,8 +119,10 @@ const WorldBridge: React.FC = () => {
     // gsap-eased rig values (pure function of frame, never React state)
     const rig = videoRig(frame, durationInFrames);
     camera.position.set(d.pos[0], d.pos[1], d.pos[2] - rig.dolly * 0.5);
-    const look = new THREE.Vector3(d.look[0], d.look[1], d.look[2]);
-    camera.lookAt(look);
+    lookVec.set(d.look[0], d.look[1], d.look[2]);
+    camera.lookAt(lookVec);
+    // banked roll from the pure driver — leans into lateral swings
+    camera.rotateZ(d.roll);
     // fov kick at act transitions (punch) — mutation happens in the r3f
     // render-loop callback, not during React render
     camera.fov = d.fov + rig.punch * 4;
@@ -650,7 +655,7 @@ export const HyperReelComposition: React.FC<HyperReelProps> = ({ name }) => {
       <ThreeCanvas
         width={width}
         height={height}
-        camera={{ fov: 42, near: 0.1, far: 120, position: [0, 0.6, 13] }}
+        camera={{ fov: 38, near: 0.1, far: 120, position: [0, 1.0, 15.5] }}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;

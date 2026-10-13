@@ -36,6 +36,14 @@ interface ModeFlags {
   reducedMotion: boolean;
 }
 
+/**
+ * Web-only pointer parallax (beyond the shared choreography — the pure
+ * driver stays input-free; this is presentation-layer interactivity,
+ * like the custom cursor). Smoothed with a fixed per-frame damping
+ * factor so no clock is read.
+ */
+const pointer = { tx: 0, ty: 0, x: 0, y: 0 };
+
 function useModeFlags(): ModeFlags & { ready: boolean } {
   const [flags, setFlags] = useState<ModeFlags & { ready: boolean }>({
     mobile: false,
@@ -62,9 +70,19 @@ function useModeFlags(): ModeFlags & { ready: boolean } {
   return flags;
 }
 
-const SceneRig: React.FC = () => {
+const SceneRig: React.FC<{ interactive: boolean }> = ({ interactive }) => {
   const scene = useThree((s) => s.scene);
   const bundles = useRef<SceneBundle[]>([]);
+
+  useEffect(() => {
+    if (!interactive) return;
+    const onMove = (e: PointerEvent) => {
+      pointer.tx = (e.clientX / window.innerWidth) * 2 - 1;
+      pointer.ty = (e.clientY / window.innerHeight) * 2 - 1;
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [interactive]);
 
   useLayoutEffect(() => {
     applyEnvironment(scene);
@@ -93,8 +111,25 @@ const SceneRig: React.FC = () => {
     const progress = clamp01(progressStore.progress);
     for (const b of bundles.current) b.update(progress);
     const d = masterDriver(progress);
-    camera.position.set(d.pos[0], d.pos[1], d.pos[2]);
-    camera.lookAt(d.look[0], d.look[1], d.look[2]);
+
+    // pointer parallax: smoothed gaze-follow (web-only, interactive)
+    let px = 0;
+    let py = 0;
+    if (interactive) {
+      pointer.x += (pointer.tx - pointer.x) * 0.08;
+      pointer.y += (pointer.ty - pointer.y) * 0.08;
+      px = pointer.x;
+      py = pointer.y;
+    }
+
+    camera.position.set(
+      d.pos[0] + px * 0.22,
+      d.pos[1] - py * 0.14,
+      d.pos[2]
+    );
+    camera.lookAt(d.look[0] + px * 0.55, d.look[1] - py * 0.4, d.look[2]);
+    // banked roll from the pure driver — leans into lateral swings
+    camera.rotateZ(d.roll);
     if (camera.fov !== d.fov) {
       camera.fov = d.fov;
       camera.updateProjectionMatrix();
@@ -129,14 +164,14 @@ export const LiveCanvas: React.FC = () => {
     <div className="fixed inset-0 -z-10" aria-hidden>
       <Canvas
         dpr={dpr}
-        camera={{ fov: 42, near: 0.1, far: 120, position: [0, 0.6, 13] }}
+        camera={{ fov: 38, near: 0.1, far: 120, position: [0, 1.0, 15.5] }}
         gl={{ antialias: !mobile, alpha: false, powerPreference: "high-performance" }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.08;
         }}
       >
-        <SceneRig />
+        <SceneRig interactive={!mobile && !reducedMotion} />
         {post ? (
           <EffectComposer>
             <Bloom

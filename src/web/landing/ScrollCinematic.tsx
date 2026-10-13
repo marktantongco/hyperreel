@@ -159,7 +159,10 @@ export const ScrollCinematic: React.FC = () => {
               start: "top top",
               end: "+=4200",
               pin: true,
-              scrub: true,
+              // scrub 0.6: buttery catch-up smoothing. Overlays AND the
+              // canvas read the same scrubbed progress, so they stay
+              // perfectly in sync while the camera glides.
+              scrub: 0.6,
               anticipatePin: 1,
               onUpdate: (self) => {
                 setProgress(self.progress);

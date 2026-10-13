@@ -98,12 +98,20 @@ message (the UI keeps the in-browser preview and shows local/Lambda guidance).
 
 ## Deploy
 
-- **Vercel (recommended)** — import repo, add `DATABASE_URL=file:./db/custom.db` (or switch to Turso/Postgres),
-  run `bun run db:push` once. `/api/render` works where a headless Chrome is available; otherwise it degrades to
-  `unavailable` as designed.
-- **Remotion Lambda (rendering at scale)** — deploy the same entry (`src/video/index.ts`) with
-  `npx remotion lambda`, then call `renderMediaOnLambda` from `/api/render` instead of the local renderer.
-- **GitHub Pages (static)** — one-time repo step: *Settings → Pages → Deploy from branch → `gh-pages`* — then:
+- **Vercel (recommended fullstack layer)** — import the repo (framework auto-detected; `postinstall` runs
+  `prisma generate`). Two env groups light up the serverless features (both optional — every route degrades
+  gracefully without them):
+
+  | Env | Lights up | Notes |
+  |---|---|---|
+  | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | reactions DB + render-queue rows in Redis | [Upstash](https://upstash.com) free tier works; without it reactions fall back to in-memory counters |
+  | `REMOTION_LICENSE_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` (+ optional `REMOTION_SITE_NAME`, `REMOTION_FUNCTION_NAME`) | `/api/render` → **Remotion Lambda** MP4 renders | presigned S3 download URLs; site + function are created on demand; requires a [Remotion license](https://remotion.pro) and the [Remotion AWS role](https://remotion.dev/docs/lambda/permission-management) |
+
+  Local/self-hosted keeps working with SQLite (`DATABASE_URL=file:./db/custom.db`, `bun run db:push` once)
+  and the local `@remotion/renderer` path. `POST /api/render` kicks renders with `after()` (Vercel
+  `waitUntil`, `maxDuration: 300` — Vercel Pro).
+
+- **GitHub Pages (static landing)** — one-time repo step: *Settings → Pages → Deploy from branch → `gh-pages`* — then:
 
   ```bash
   bash scripts/hyperreel-build-pages.sh   # → PAGES EXPORT READY: out/

@@ -44,6 +44,7 @@ function snapshotWorld(frame: number): string {
     d.pos,
     d.look,
     d.fov,
+    d.roll,
     d.frame,
     d.params,
     d.visibility,

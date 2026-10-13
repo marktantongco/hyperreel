@@ -31,6 +31,7 @@ const nextConfig: NextConfig = isPagesExport
         "@remotion/bundler",
         "@remotion/renderer",
         "@remotion/studio",
+        "@remotion/lambda",
       ],
     };
 

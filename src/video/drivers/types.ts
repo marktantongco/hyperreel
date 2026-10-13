@@ -13,6 +13,12 @@ export interface CameraFrame {
   pos: [number, number, number];
   look: [number, number, number];
   fov: number;
+  /**
+   * Banked roll around the view axis (radians). Positive = lean left,
+   * negative = lean right — the camera banks INTO lateral swings like
+   * a motorcycle cornering. Deterministic: derived from the curve tangent.
+   */
+  roll: number;
 }
 
 export interface ActParams {
